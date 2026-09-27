@@ -7,6 +7,8 @@ A small appointment-booking API built with NestJS 11, PostgreSQL, Prisma 7, Sock
 - `DELETE /bookings/{bookingId}` cancels a booking. Repeating the call is safe.
 - Clients get live updates over Socket.IO: `slot.booked` and `slot.released`.
 
+> **Optional companion:** [booking-api-explainer](https://github.com/AbdulrhmanAmmar20/booking-api-explainer) is a small React page that sends real requests to this API and traces each one through the server code, step by step. It isn't part of the challenge and nothing here depends on it.
+
 ---
 
 ## Requirements
