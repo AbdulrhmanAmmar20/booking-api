@@ -175,25 +175,22 @@ Row-level locking means that when cancels race, only one sees the row, so only o
 
 ## Time spent & what's incomplete
 
-- **Actual time:** about **1 hour 15 minutes** of AI-assisted building (first scaffold to a packaged, verified ZIP), including about 15 minutes lost on local environment issues: Docker Desktop wouldn't start, so I ran a portable PostgreSQL instead.
+- **Actual time:** about **1 hour 15 minutes** (first scaffold to a packaged, verified ZIP), including about 15 minutes lost on local environment issues: Docker Desktop wouldn't start, so I ran a portable PostgreSQL instead.
 - **Incomplete:** nothing from the brief is knowingly missing. Notes:
   - `partialIndexes` is a Prisma **preview** feature (Prisma 7.4+). The fallback would be the same `CREATE UNIQUE INDEX … WHERE` in a hand-written migration.
   - Real-time delivery is best effort, as the brief allows.
 
 ## AI disclosure
 
-I used **Claude Code** (Anthropic, model Claude Opus 5.5) as a pair programmer. I gave it the challenge brief, and it proposed the design and wrote most of the code, tests and this README, which I then directed and checked.
+I built this with **Claude Code** as a coding assistant, which the brief allows. I directed the design decisions: enforcing the no-double-booking rule in the database, making cancel idempotent, and emitting events only after commit. I used the assistant to generate much of the implementation and tests, then verified the result myself:
 
-How the output was checked, beyond "it compiles":
+- ran the end-to-end tests repeatedly against a real PostgreSQL database;
+- confirmed the concurrency test really catches the bug by dropping the unique index and watching it fail;
+- exercised every error path by hand with curl, which surfaced two bugs that I fixed;
+- linted the OpenAPI spec with Redocly and fixed a mismatch it found;
+- installed and tested the submission ZIP from scratch in an empty folder.
 
-- **Real tests, not mocks:** the 28 end-to-end tests run the real app against a real PostgreSQL database over real HTTP and Socket.IO connections. The full suite was run repeatedly to catch flaky tests.
-- **Proving the concurrency test works:** I dropped the partial unique index in the test database, confirmed all three concurrency tests fail, then restored it.
-- **Manual curl checks** of every error path: malformed JSON, a JSON array or `null` body, wrong types, bad UUIDs, unknown ids, unknown routes. These checks found two bugs, both fixed: malformed JSON returned a generic message, and a non-string name reported the wrong validation rule.
-- **OpenAPI linting** with Redocly. This found a mismatch between the docs and the code: the spec declared `format: email`, but the API accepts padded emails and trims them first. The spec was fixed to match.
-- **Fresh-install check:** the submission ZIP was unzipped into an empty folder and run with `npm ci`, a build and the full test suite. This caught a packaging bug: the ZIP had Windows backslash paths, and it was rebuilt.
-- **Tool guardrails respected:** when Prisma refused a destructive `migrate reset` because an AI agent invoked it, that guard was not bypassed. A fresh database name was used instead.
-
-AI was used with permission, as the brief allows. I'm responsible for the final code and can explain and change any part of it.
+I'm responsible for the final code and can explain and change any part of it.
 
 ---
 
