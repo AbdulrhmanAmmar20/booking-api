@@ -1,0 +1,45 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "cjs"
+  importFileExtension = ""
+  previewFeatures     = ["partialIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum BookingStatus {
+  active
+  cancelled
+}
+
+model Slot {
+  id        String    @id @default(uuid()) @db.Uuid
+  startsAt  DateTime  @map("starts_at") @db.Timestamptz(3)
+  endsAt    DateTime  @map("ends_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  bookings  Booking[]
+
+  @@index([startsAt, id])
+  @@map("slots")
+}
+
+model Booking {
+  id            String        @id @default(uuid()) @db.Uuid
+  slotId        String        @map("slot_id") @db.Uuid
+  customerName  String        @map("customer_name") @db.VarChar(200)
+  customerEmail String        @map("customer_email") @db.VarChar(254)
+  status        BookingStatus @default(active)
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  cancelledAt   DateTime?     @map("cancelled_at") @db.Timestamptz(3)
+  slot          Slot          @relation(fields: [slotId], references: [id], onDelete: Restrict)
+
+  // The core invariant: at most ONE active booking per slot, enforced by PostgreSQL.
+  // Cancelled bookings are excluded, so a slot can be re-booked after cancellation
+  // while its booking history is kept.
+  @@unique([slotId], where: raw("status = 'active'"), map: "bookings_one_active_per_slot")
+  @@index([slotId])
+  @@map("bookings")
+}
